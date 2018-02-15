@@ -9,13 +9,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/rjrodger/sneeze.git"
+    "url": "https://github.com/wzrdtales/sneeze-ng.git"
   },
   "keywords": ["swim", "sneeze", "peer", "discovery"],
   "author": "Richard Rodger richardrodger.com",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/rjrodger/sneeze/issues"
+    "url": "https://github.com/wzrdtales/sneeze-ng/issues"
   },
   "homepage": "https://github.com/rjrodger/sneeze",
   "dependencies": {
