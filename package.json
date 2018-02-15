@@ -1,5 +1,5 @@
 {
-  "name": "sneeze",
+  "name": "sneeze-ng",
   "version": "0.8.0",
   "description": "Easily join SWIM networks",
   "main": "sneeze.js",
@@ -11,12 +11,7 @@
     "type": "git",
     "url": "https://github.com/rjrodger/sneeze.git"
   },
-  "keywords": [
-    "swim",
-    "sneeze",
-    "peer",
-    "discovery"
-  ],
+  "keywords": ["swim", "sneeze", "peer", "discovery"],
   "author": "Richard Rodger richardrodger.com",
   "license": "MIT",
   "bugs": {
@@ -37,9 +32,5 @@
     "code": "3.x.x",
     "lab": "11.x.x"
   },
-  "files": [
-    "LICENSE",
-    "README.md",
-    "sneeze.js"
-  ]
+  "files": ["LICENSE", "README.md", "sneeze.js"]
 }
