@@ -1,11 +1,12 @@
 {
-  "name": "sneeze-ng",
-  "version": "0.8.1",
+  "name": "sneeze",
+  "version": "0.10.0",
   "description": "Easily join SWIM networks",
   "main": "sneeze.js",
   "scripts": {
-    "test": "lab -P test -v -t 80 -r console -I Reflect",
-    "test-cov-html": "lab -P test -r html -o coverage.html"
+    "test": "lab -P test -v -t 80 -r console -I URL,URLSearchParams,BigUint64Array,BigInt64Array,BigInt",
+    "coveralls": "lab -s -P test -r lcov -I URL,URLSearchParamsBigUint64Array,BigInt64Array,BigInt | coveralls",
+    "prettier": "prettier --write --no-semi --single-quote mesh.js"
   },
   "repository": {
     "type": "git",
@@ -24,18 +25,21 @@
   },
   "homepage": "https://github.com/rjrodger/sneeze",
   "dependencies": {
-    "ansi-escapes": "1.4.0",
-    "chalk": "1.1.3",
-    "jsonpath": "0.2.11",
-    "keypress": "0.2.1",
-    "lodash": "4.5.0",
-    "optioner": "0.8.0",
-    "pad": "1.1.0",
-    "swim": "0.3.2"
+    "ansi-escapes": "3.1",
+    "chalk": "2.4",
+    "jsonpath": "1.0",
+    "keypress": "0.2",
+    "lodash": "4.17",
+    "nid": "0.3",
+    "optioner": "1.1",
+    "pad": "2.1",
+    "swim": "0.6"
   },
   "devDependencies": {
-    "code": "3.x.x",
-    "lab": "11.x.x"
+    "code": "4",
+    "lab": "14",
+    "coveralls": "3",
+    "prettier": "1"
   },
   "files": [
     "LICENSE",

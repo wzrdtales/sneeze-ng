@@ -1,6 +1,6 @@
 /*
   MIT License,
-  Copyright (c) 2016, Richard Rodger and other contributors.
+  Copyright (c) 2016-2018, Richard Rodger and other contributors.
 */
 
 'use strict'
@@ -16,11 +16,15 @@ var AE = require('ansi-escapes')
 var Pad = require('pad')
 var JP = require('jsonpath')
 var Chalk = require('chalk')
+var Nid = require('nid')
 
 var Joi = Optioner.Joi
 
-var DEFAULT_HOST = (module.exports.DEFAULT_HOST = '127.0.0.1')
-var DEFAULT_PORT = (module.exports.DEFAULT_PORT = 39999)
+var Package = require('./package.json')
+
+var DEFAULT_HOST = module.exports.DEFAULT_HOST = '127.0.0.1'
+var DEFAULT_PORT = module.exports.DEFAULT_PORT = 39999
+
 
 var optioner = Optioner({
   isbase: false,
@@ -109,10 +113,12 @@ function Sneeze(options) {
         var host = options.host + ':' + port
         var incarnation = Date.now()
 
-        self.id = meta.identifier$ =
-          null == options.identifier
-            ? host + '~' + incarnation + '~' + Math.random()
-            : options.identifier
+        self.id = meta.identifier$ = null == options.identifier ?
+          host+'~'+
+          (incarnation+'~').substring(7)+
+          Nid()+'~'+
+          Package.version
+          : options.identifier
 
         meta.tag$ = options.tag
         meta.v$ = options.v || 0
@@ -153,6 +159,24 @@ function Sneeze(options) {
 
         swim = new Swim(swim_opts)
 
+        swim.net.on('error', function(err) {
+          if (err && !joined && attempts < max_attempts) {
+            attempts++
+
+            var wait = options.retry_min +
+                  Math.floor(Math.random() * (options.retry_max-options.retry_min))
+
+            swim.net.removeAllListeners('error')
+            setTimeout(join, wait)
+            return
+          }
+          else if( err ) {
+            self.emit('error',err)
+            swim.net.removeAllListeners('error')
+            return
+          }
+        })
+
         swim.bootstrap(bases, function onBootstrap(err) {
           if (!isbase && err && !joined && attempts < max_attempts) {
             attempts++
@@ -178,26 +202,6 @@ function Sneeze(options) {
 
           joined = true
 
-          swim.net.on('error', function(err) {
-            if (err && !joined && attempts < max_attempts) {
-              attempts++
-
-              var wait =
-                options.retry_min +
-                Math.floor(
-                  Math.random() * (options.retry_max - options.retry_min)
-                )
-
-              swim.net.removeAllListeners('error')
-              setTimeout(join, wait)
-              return
-            } else if (err) {
-              self.emit('error', err)
-              swim.net.removeAllListeners('error')
-              return
-            }
-          })
-
           self.info = swim_opts
 
           _.each(swim.members(), updateinfo)
@@ -209,6 +213,7 @@ function Sneeze(options) {
           swim.on(Swim.EventType.Change, function onChange(info) {
             updateinfo(info)
           })
+
 
           self.emit('ready')
         })
@@ -241,9 +246,11 @@ function Sneeze(options) {
       return self
     }
 
+
     self.members = function() {
       return _.clone(members)
     }
+
 
     self.leave = function() {
       swim && swim.leave()
@@ -287,6 +294,7 @@ function Sneeze(options) {
     self.on('error', function(err) {
       self.log('ERROR', err)
     })
+
   })
 }
 Util.inherits(Sneeze, Events.EventEmitter)
@@ -347,6 +355,7 @@ function make_monitor(sneeze, options) {
     //console.log('rem',member.meta)
     render()
   })
+
 
   var w = process.stdout.write.bind(process.stdout)
   var states = {
@@ -409,6 +418,7 @@ function make_monitor(sneeze, options) {
     })
   }
 
+
   Keypress(process.stdin)
 
   process.stdin.on('keypress', function(ch, key) {
@@ -429,7 +439,9 @@ function make_monitor(sneeze, options) {
     }
   })
 
-  process.stdin.setRawMode(true)
+  if (process.stdin.setRawMode){
+    process.stdin.setRawMode(true)
+  }
   process.stdin.resume()
 }
 

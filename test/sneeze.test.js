@@ -15,10 +15,12 @@ const describe = lab.describe
 const it = lab.it
 const expect = Code.expect
 
+var tmx = parseInt(process.env.TIMEOUT_MULTIPLIER || 1, 10)
+
 
 describe('sneeze', function () {
 
-  it('happy', { parallel: false, timeout:5555 }, function (done) {
+  it('happy', { parallel: false, timeout:5555*tmx }, function (fin) {
     var log = []
     var append = function(tag){ return function(arg) {
       log.push(tag+'~'+arg.name)
@@ -27,32 +29,33 @@ describe('sneeze', function () {
     var base = Sneeze({isbase: true})
     base.on('add',append('a0'))
     base.on('remove',append('r0'))
-    base.on('error',done)
+    base.on('error',fin)
     base.join({name:'0'})
-
+    
     var nodeA = Sneeze({port:44444})
     nodeA.on('add',append('aA'))
     nodeA.on('remove',append('rA'))
-    nodeA.on('error',done)
+    nodeA.on('error',fin)
     nodeA.join({name:'A'})
-
+    
     var nodeB = Sneeze()
     nodeB.on('add',append('aB'))
     nodeB.on('remove',append('rB'))
-    nodeB.on('error',done)
+    nodeB.on('error',fin)
     nodeB.join({name:'B'})
     
+    
     wait_ready( [base, nodeA, nodeB], function () {
-      expect(log).to.equal(
-        [ 'a0~A', 'a0~B', 'aA~0', 'aA~B', 'aB~A', 'aB~0' ])
-
+      expect(log.sort()).to.equal(
+        [ 'a0~A', 'a0~B', 'aA~0', 'aA~B', 'aB~A', 'aB~0' ].sort())
+      
       base.leave()
       nodeA.leave()
       nodeB.leave()
-      done()
-    })      
+      fin()
+    })
   })
-
+  
 
   it('methods', function (done) {
     var s0 = Sneeze()
@@ -100,7 +103,7 @@ describe('sneeze', function () {
 
 
 
-  it('collision', { parallel: false, timeout:5555  }, function (done) {
+  it('collision', { parallel: false, timeout:5555*tmx  }, function (done) {
     var base = Sneeze({isbase: true})
     base.on('error',function(err){
       done()
@@ -125,7 +128,7 @@ describe('sneeze', function () {
   })
 
 
-  it('identifier', { parallel: false, timeout:5555  }, function (done) {
+  it('identifier', { parallel: false, timeout:5555*tmx  }, function (done) {
     var base = Sneeze({isbase: true, identifier:'0'})
     base.on('error',done)
     base.join({name:'0'})
@@ -147,12 +150,20 @@ describe('sneeze', function () {
   })
 
 
-  it('leave', { parallel: false, timeout: 5555 }, function (done) {
+  it('leave', { parallel: false, timeout: 5555*tmx }, function (done) {
     var log = [], append = function(tag){ return function(arg) {
       log.push(tag+'~'+arg.name)
     }}
 
-    var base = Sneeze({isbase: true})
+    var base = Sneeze({isbase: true,
+                       swim: {
+                         interval:55,
+                         suspectTimeout:111,
+                         pingTimeout:111,
+                         pingReqTimeout:111,
+                       }
+                      })
+    
     base.on('add',append('a0'))
     base.on('remove',append('r0'))
     base.on('error',done)
@@ -175,18 +186,19 @@ describe('sneeze', function () {
       nodeA.leave()
 
       setTimeout(function(){
+        // console.log(log)
         expect(log.length).to.equal(8)
 
         base.leave()
         nodeB.leave()
-        setTimeout(done,1111)
+        setTimeout(done,111*tmx)
         
-      },1111)
+      },999*tmx)
     })
   })
 
 
-  it('tag', { parallel: false, timeout:5555  }, function (done) {
+  it('tag', { parallel: false, timeout:5555*tmx  }, function (done) {
     var base = Sneeze({isbase: true, silent: true, identifier:'foo-0'})
     base.on('error',done)
     base.join({name:'foo-0'})
@@ -232,11 +244,11 @@ describe('sneeze', function () {
       nodeA_bar.leave()
       nodeB_bar.leave()
       done()
-    },333)
+    },666*tmx)
   })
 
 
-  it('multi-base', { parallel: false, timeout:7777  }, function (done) {
+  it('multi-base', { parallel: false, timeout:7777*tmx  }, function (done) {
     var silent = true
     var bases = ['127.0.0.1:39000','127.0.0.1:39001']
 
@@ -292,14 +304,14 @@ describe('sneeze', function () {
 
               done()
             })
-          },333)
+          },666*tmx)
         })
       })
     })
   })
 
   
-  it('edges', { parallel: false, timeout:7777 }, function (done) {
+  it('edges', { parallel: false, timeout:7777*tmx }, function (done) {
     try {
       Sneeze({silent:'qqq'})
       done(new Error('optioner should fail'))
@@ -312,11 +324,11 @@ describe('sneeze', function () {
     setTimeout(function() {
       expect(orphan.info).to.equal(void 0)
       done()
-    }, 555)
+    }, 777*tmx)
   })
 
 
-  it('monitor', { parallel: false, timeout:7777 }, function (done) {
+  it('monitor', { parallel: false, timeout:7777*tmx }, function (done) {
     var base = Sneeze({isbase: true, v:1}).join({foo:'bar'})
     var monitor = Sneeze({monitor:{active:true, meta:['foo']}, v:2}).join()
 
@@ -332,8 +344,8 @@ describe('sneeze', function () {
       setTimeout(function () {
         monitor.leave()
         done()
-      }, 222)
-    }, 999)
+      }, 222*tmx)
+    }, 1111*tmx)
   })
 
 })
@@ -344,7 +356,7 @@ function wait_ready( nodes, done ) {
   while( node = nodes.shift() ) {
     node.on('ready',function() {
       count--
-      if( 0 === count ) setTimeout(done,111);
+      if( 0 === count ) setTimeout(done,333*tmx);
     })
   }
 }
