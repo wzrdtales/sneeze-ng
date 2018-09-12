@@ -1,5 +1,5 @@
 {
-  "name": "sneeze",
+  "name": "sneeze-ng",
   "version": "0.10.1",
   "description": "Easily join SWIM networks",
   "main": "sneeze.js",
