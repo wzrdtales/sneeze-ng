@@ -33,7 +33,7 @@
     "nid": "0.3",
     "optioner": "1.1",
     "pad": "2.1",
-    "swim": "0.6"
+    "swim": "^0.6.0"
   },
   "devDependencies": {
     "code": "4",
