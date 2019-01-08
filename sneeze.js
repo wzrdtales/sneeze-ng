@@ -196,6 +196,12 @@ function Sneeze(options) {
             setTimeout(join, wait);
             return;
           } else if (err) {
+            // if it is a base, emit a retry event in case of disconnects on the
+            // base node
+            if (isbase) {
+              self.emit("retry");
+            }
+
             // first base node will see a JoinFailedError as there is
             // nobody else out there
             if (!isbase || "JoinFailedError" !== err.name) {
