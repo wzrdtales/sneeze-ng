@@ -9,7 +9,7 @@ var Events = require("events");
 var Util = require("util");
 
 var _ = require("lodash");
-var Swim = require("swim");
+var Swim = require("@wzrdtales/swim-ng");
 var Optioner = require("optioner");
 var Keypress = require("keypress");
 var AE = require("ansi-escapes");
