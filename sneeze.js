@@ -261,7 +261,6 @@ function Sneeze(options) {
     };
 
     self.leave = function () {
-      joined = false;
       swim && swim.leave();
       members = {};
       return self;
