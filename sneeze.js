@@ -161,6 +161,7 @@ function Sneeze(options) {
         );
 
         swim = new Swim(swim_opts);
+        self._swim = swim;
 
         swim.net.on("error", function (err) {
           if (err && !joined && attempts < max_attempts) {
