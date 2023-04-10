@@ -11,8 +11,8 @@ dependencies:
     specifier: '2.4'
     version: 2.4.2
   jsonpath:
-    specifier: '1.0'
-    version: 1.0.2
+    specifier: ~1.1.1
+    version: 1.1.1
   keypress:
     specifier: '0.2'
     version: 0.2.1
@@ -1040,13 +1040,12 @@ packages:
     resolution: {integrity: sha512-2/Ki0GcmuqSrgFyelQq9M05y7PS0mEwuIzrf3f1fPqkVDVRvZrPZtVSMHxdgo8Aq0sxAOb/cr2aqqA3LeWHVPg==}
     dev: true
 
-  /jsonpath@1.0.2:
-    resolution: {integrity: sha512-rmzlgFZiQPc6q4HDyK8s9Qb4oxBnI5sF61y/Co5PV0lc3q2bIuRsNdueVbhoSHdKM4fxeimphOAtfz47yjCfeA==}
-    requiresBuild: true
+  /jsonpath@1.1.1:
+    resolution: {integrity: sha512-l6Cg7jRpixfbgoWgkrl77dgEj8RPvND0wMH6TwQmi9Qs4TFfS9u5cUFnbeKTwj5ga5Y3BTGGNI28k117LJ009w==}
     dependencies:
       esprima: 1.2.2
       static-eval: 2.0.2
-      underscore: 1.7.0
+      underscore: 1.12.1
     dev: false
 
   /jsprim@1.4.2:
@@ -1723,8 +1722,8 @@ packages:
     dev: true
     optional: true
 
-  /underscore@1.7.0:
-    resolution: {integrity: sha512-cp0oQQyZhUM1kpJDLdGO1jPZHgS/MpzoWYfe9+CM2h/QGDZlqwT2T3YGukuBdaNJ/CAPoeyAZRRHz8JFo176vA==}
+  /underscore@1.12.1:
+    resolution: {integrity: sha512-hEQt0+ZLDVUMhebKxL4x1BTtDY7bavVofhZ9KZ4aI26X9SRaE+Y3m83XUL1UP2jn8ynjndwCCpEHdUG+9pP1Tw==}
     dev: false
 
   /uri-js@4.4.1:
