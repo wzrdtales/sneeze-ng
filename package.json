@@ -32,7 +32,7 @@
     "keypress": "0.2",
     "lodash": "4.17",
     "nid": "0.3",
-    "optioner": "1.1",
+    "optioner": "~5.0.1",
     "pad": "2.1"
   },
   "devDependencies": {
