@@ -94,6 +94,20 @@ function Sneeze(options) {
 
     var swim;
     var members = {};
+    var retry_timer = null;
+    var left = false;
+
+    function stopswim(instance) {
+      if (!instance || "stopped" === instance.state) {
+        return;
+      }
+      try {
+        instance.leave();
+      } catch (e) {
+        // the socket may never have been bound (listen failed)
+        instance.state = "stopped";
+      }
+    }
 
     self.join = function (meta) {
       meta = meta || {};
@@ -102,8 +116,11 @@ function Sneeze(options) {
         max_attempts = options.retry_attempts,
         joined = false;
 
+      left = false;
+
       function join() {
-        if (joined) {
+        retry_timer = null;
+        if (joined || left) {
           return;
         }
 
@@ -163,8 +180,21 @@ function Sneeze(options) {
         swim = new Swim(swim_opts);
         self._swim = swim;
 
-        swim.net.on("error", function (err) {
-          if (err && !joined && attempts < max_attempts) {
+        var attempt = swim;
+        var failed = false;
+
+        // A failed attempt must be stopped before the next one starts:
+        // otherwise its socket stays bound and it keeps pinging the
+        // bases as an extra member. The Net emitter keeps a listener,
+        // so a late socket error is not thrown as an unhandled event.
+        function giveup(retry) {
+          if (failed) {
+            return;
+          }
+          failed = true;
+          stopswim(attempt);
+
+          if (retry) {
             attempts++;
 
             var wait =
@@ -173,28 +203,30 @@ function Sneeze(options) {
                 Math.random() * (options.retry_max - options.retry_min)
               );
 
-            swim.net.removeAllListeners("error");
-            setTimeout(join, wait);
+            retry_timer = setTimeout(join, wait);
+          }
+        }
+
+        attempt.net.on("error", function (err) {
+          if (!err || failed || attempt !== swim) {
             return;
-          } else if (err) {
+          }
+          if (!joined && attempts < max_attempts) {
+            giveup(true);
+          } else {
+            if (!joined) {
+              giveup(false);
+            }
             self.emit("error", err);
-            swim.net.removeAllListeners("error");
-            return;
           }
         });
 
-        swim.bootstrap(bases, function onBootstrap(err) {
+        attempt.bootstrap(bases, function onBootstrap(err) {
+          if (failed || left) {
+            return;
+          }
           if (!isbase && err && !joined && attempts < max_attempts) {
-            attempts++;
-
-            var wait =
-              options.retry_min +
-              Math.floor(
-                Math.random() * (options.retry_max - options.retry_min)
-              );
-
-            swim.net.removeAllListeners("error");
-            setTimeout(join, wait);
+            giveup(true);
             return;
           } else if (err) {
             // if it is a base, emit a retry event in case of disconnects on the
@@ -206,8 +238,8 @@ function Sneeze(options) {
             // first base node will see a JoinFailedError as there is
             // nobody else out there
             if (!isbase || "JoinFailedError" !== err.name) {
+              giveup(false);
               self.emit("error", err);
-              swim.net.removeAllListeners("error");
               return;
             }
           }
@@ -262,7 +294,10 @@ function Sneeze(options) {
     };
 
     self.leave = function () {
-      swim && swim.leave();
+      left = true;
+      clearTimeout(retry_timer);
+      retry_timer = null;
+      stopswim(swim);
       members = {};
       return self;
     };
@@ -281,6 +316,17 @@ function Sneeze(options) {
         return;
       }
 
+      // A node keeps its identifier across join retries, but every
+      // attempt has its own host and incarnation. News about an
+      // older attempt must not replace the current one.
+      if (
+        prev &&
+        prev.host !== member.host &&
+        prev.incarnation > member.incarnation
+      ) {
+        return;
+      }
+
       self.log("add", host, meta.identifier$, meta.tag$, meta);
       members[meta.identifier$] = member;
       self.emit("add", meta, member);
@@ -291,7 +337,8 @@ function Sneeze(options) {
       var host = member.host;
 
       var prev = members[meta.identifier$];
-      if (!prev) {
+      // an abandoned join attempt going faulty is not the node leaving
+      if (!prev || prev.host !== host) {
         return;
       }
 

@@ -128,6 +128,104 @@ describe('sneeze', function () {
   })
 
 
+  it('retry-leaves-no-zombies', { parallel: false, timeout:5555*tmx }, function (done) {
+    var before = bound_udp_sockets()
+    var joins = 0
+
+    // no base listens on this port, so every attempt fails
+    var node = Sneeze({
+      bases: ['127.0.0.1:39991'],
+      retry_attempts: 4,
+      retry_min: 10,
+      retry_max: 20,
+      swim: { joinTimeout: 100 },
+      silent: false,
+      log: function (tag) {
+        if ('joining' === tag) joins++
+      }
+    })
+
+    node.on('error', function (err) {
+      expect(err.name).to.equal('JoinFailedError')
+      expect(joins).to.equal(5)
+
+      // every failed attempt, including the last, released its socket
+      expect(bound_udp_sockets()).to.equal(before)
+
+      node.leave()
+      done()
+    })
+
+    node.join({name:'Z'})
+  })
+
+
+  it('leave-stops-pending-retry', { parallel: false, timeout:5555*tmx }, function (done) {
+    var before = bound_udp_sockets()
+    var joins = 0
+
+    var node = Sneeze({
+      bases: ['127.0.0.1:39991'],
+      retry_attempts: 22,
+      retry_min: 50,
+      retry_max: 60,
+      swim: { joinTimeout: 100 },
+      silent: false,
+      log: function (tag) {
+        if ('joining' === tag) joins++
+      }
+    })
+    node.on('error', done)
+    node.join({name:'Z'})
+
+    setTimeout(function () {
+      node.leave()
+      var seen = joins
+      setTimeout(function () {
+        expect(joins).to.equal(seen)
+        expect(bound_udp_sockets()).to.equal(before)
+        done()
+      }, 400)
+    }, 300)
+  })
+
+
+  it('stale-attempt-does-not-remove-node', { parallel: false, timeout:5555*tmx }, function (done) {
+    var base = Sneeze({isbase: true})
+    base.on('error', done)
+    base.join({name:'0'})
+
+    var nodeA = Sneeze({identifier: 'a'})
+    nodeA.on('error', done)
+    nodeA.join({name:'A'})
+
+    wait_ready([base, nodeA], function () {
+      var removed = []
+      base.on('remove', function (meta) { removed.push(meta.name) })
+
+      var live = base.members().a
+      expect(live).to.exist()
+
+      // an earlier, abandoned join attempt of A: same identifier,
+      // other port, older incarnation; first seen alive, then faulty
+      var stale = {
+        host: '127.0.0.1:1',
+        incarnation: live.incarnation - 1000,
+        meta: _.assign({}, live.meta)
+      }
+      base._swim.emit('change', _.assign({ state: 0 }, stale))
+      base._swim.emit('change', _.assign({ state: 2 }, stale))
+
+      expect(removed).to.equal([])
+      expect(base.members().a.host).to.equal(live.host)
+
+      base.leave()
+      nodeA.leave()
+      done()
+    })
+  })
+
+
   it('identifier', { parallel: false, timeout:5555*tmx  }, function (done) {
     var base = Sneeze({isbase: true, identifier:'0'})
     base.on('error',done)
@@ -359,4 +457,12 @@ function wait_ready( nodes, done ) {
       if( 0 === count ) setTimeout(done,333*tmx);
     })
   }
+}
+
+
+function bound_udp_sockets () {
+  return process._getActiveHandles().filter(function (h) {
+    if ('function' !== typeof h.address || 'function' !== typeof h.setTTL) return false
+    try { h.address(); return true } catch (e) { return false }
+  }).length
 }
